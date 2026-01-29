@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabaseClient";
 
 export default function Home({ initialMode } = {}) {
+  const router = useRouter();
+
   const [mode, setMode] = useState(initialMode || "login"); // login | signup
 
   const [fullName, setFullName] = useState("");
@@ -50,6 +53,35 @@ export default function Home({ initialMode } = {}) {
       sub?.subscription?.unsubscribe?.();
     };
   }, []);
+
+  // Option B: Auto redirect logged-in users to the right area
+  useEffect(() => {
+    if (!sessionUser || !myProfile) return;
+
+    const roleNow = myProfile?.role || "";
+    const statusNow = myProfile?.status || "";
+
+    // If pending, keep them here so they can see status and still navigate
+    if (statusNow === "pending") return;
+
+    if (roleNow === "admin") {
+      router.replace("/admin");
+      return;
+    }
+
+    if (roleNow === "jockey") {
+      router.replace("/requests");
+      return;
+    }
+
+    if (roleNow === "trainer") {
+      router.replace("/meetings");
+      return;
+    }
+
+    // owner or anything else
+    router.replace("/meetings");
+  }, [sessionUser, myProfile, router]);
 
   async function login(e) {
     e.preventDefault();
